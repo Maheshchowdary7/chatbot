@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% comment %} {% extends 'base.html' %}
+
+{% block content %}
+<h1> Hell0 {{name}}</h1>
+<form action = "add" method = 'post'>
+    {% csrf_token %}
+    Enter first number : <input type = "text" name = "num1"> <br>
+    Enter second number : <input type = "text" name = "num2"> <br> 
+    <input type = "submit">
+</form>
+{% endblock  %} {% endcomment %}
+
+
+
+{% block content1 %}
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+* {box-sizing: border-box;}
+
+/* Button used to open the chat form - fixed at the bottom of the page */
+.open-button {
+  background-color: #555;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  cursor: pointer;
+  opacity: 0.8;
+  position: fixed;
+  bottom: 23px;
+  right: 16px;
+  width: 400px;
+}
+
+/* The popup chat - hidden by default */
+.chat-popup {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  right: 15px;
+  border: 3px solid #f1f1f1;
+  z-index: 9;
+  {% comment %} position: relative; {% endcomment %}
+}
+
+/* Add styles to the form container */
+.form-container {
+  width: 700px;
+  max-height: 700px;
+  min-height: 600px;
+  padding: 10px;
+  background-color: white;
+  {% comment %} position: relative; {% endcomment %}
+  {% comment %} overflow: auto; {% endcomment %}
+}
+
+.form-container textarea {
+    width: 80%;
+    border: none;
+    background: #f1f1f1;
+    resize: none;
+    height: 5.5vw;
+    display: inline-block;
+    margin-bottom: 0px;
+}
+.rescss {
+  {% comment %} border:1px solid green; {% endcomment %}
+    display:block;
+    height:300px;
+    overflow:auto;
+}
+
+/* When the textarea gets focus, do something */
+.form-container textarea:focus {
+  background-color: #ddd;
+  outline: none;
+}
+
+/* Set a style for the submit/send button */
+.form-container .btn {
+  background-color: #4CAF50;
+  position:relative;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom:10px;
+  opacity: 0.8;
+
+}
+
+.form-container .spk_btn {
+    background-color: #4CAF50;
+    position: fixed;
+    color: white;
+    padding: 10px 10px;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    top: 78%;
+    margin-left: 3px;
+    right: 30px;
+}
+
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%
+}
+
+.btn-primary{
+  right: 0;
+  position: fixed;
+  margin-right:10px;
+  ,argin-top: 10px;
+}
+/* Add a red background color to the cancel button */
+.form-container .cancel {
+  background-color: red;
+  position:relative;
+  margin-bottom: 10px;
+
+}
+
+.div_record {
+    position: relative;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
+
+/* Add some hover effects to buttons */
+.form-container .btn:hover, .open-button:hover {
+  opacity: 1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+    <a class="btn-primary" href={% url 'logout' %}>Logout</a>
+    <h2>Hi {{ user.username }}!</h2>
+<iframe id = "show_map"  width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+<button class="open-button" onclick="openForm()">Chat</button>
+
+<div class="chat-popup" id="myForm">
+  <form id = "formcontainer"  class="form-container">
+    <h1>Chat</h1>
+
+    {% comment %} <label for="msg"><b>Message</b></label> {% endcomment %}
+    <span id="responce" class = 'rescss'></span>
+
+    <div class = "div_record">
+        <textarea id ="textarea" placeholder="Type message.." name="msg" required> </textarea>
+
+<!--        {% comment %} <button type="submit" class="btn">Send</button> {% endcomment %}-->
+
+<!--      <button id = "speek button" type="button" class="spk_btn" onclick="speech_recognise()">Speak</button>-->
+
+    </div>
+    <button id = "send button" type="button" class="btn" onclick="appendForm()">Send</button>
+    <button id = "close button" type="button" class="btn cancel" onclick="closeForm()">Close</button>
+  </form>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js">
+</script>
+
+<script>
+
+function openForm() {
+  document.getElementById("myForm").style.display = "block";
+}
+
+function speech_recognise()
+{
+    $.ajax({
+        type: "POST",
+        url: "speech_recognise",
+        data: {csrfmiddlewaretoken: '{{ csrf_token }}',
+              text: "this is my test view",
+              msg : ''},   /* Passing the text data */
+        success:  function(response){
+            response_data = response
+<!--            document.getElementById("responce").innerHTML += `<span style="padding-left:30%; float:right;">`+response_data+`</span>`-->
+            var element = document.getElementById("responce");
+            element.scrollTop = element.scrollHeight;
+            document.getElementById("textarea").value = response_data
+           }
+    });
+    var element = document.getElementById("formcontainer");
+    element.scrollTop = element.scrollHeight;
+}
+
+function appendForm()
+{
+  var a = document.getElementById("textarea").value;
+  if(a.length>0)
+  {
+    document.getElementById("responce").innerHTML += `<span style="padding-right:30%; float:left;">`+a+`</span></br>`
+    var response_data = ''
+    $.ajax({
+        type: "POST",
+        url: "process",
+        data: {csrfmiddlewaretoken: '{{ csrf_token }}',
+              text: "this is my test view",
+              msg : a},   /* Passing the text data */
+        success:  function(response){
+            response_data = response
+            if(response_data=="show"){
+                var iframe = $("#show_map");
+                iframe.attr("src", "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7592.443349111499!2d83.42547746814402!3d17.92181181096871!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a39581b73ffffff%3A0xd04b9046faa4565f!2sAnil%20Neerukonda%20Institute%20of%20Technology%20%26%20Sciences!5e0!3m2!1sen!2sin!4v1618064323012!5m2!1sen!2sin");
+                response_data = "Please refer to the map."
+            }
+            document.getElementById("responce").innerHTML += `<span style="padding-left:30%; float:right;">`+response_data + '\n\r' +`</span>`
+            var element = document.getElementById("responce");
+            element.scrollTop = element.scrollHeight;
+           }
+    });
+    {% comment %} document.getElementById("responce").innerHTML += `<span style="padding-left:30%; float:right;">`+response_data+`</span>` {% endcomment %}
+    document.getElementById("textarea").value = ''
+    var element = document.getElementById("formcontainer");
+    element.scrollTop = element.scrollHeight;
+
+  }
+}
+
+function closeForm() {
+  document.getElementById("myForm").style.display = "none";
+}
+</script>
+    {% endblock %}
